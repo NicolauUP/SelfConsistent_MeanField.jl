@@ -1,4 +1,4 @@
-KPM-SCF in Julia
+# KPM-SCF in Julia
 
 This repository contains a Julia implementation of a Self-Consistent Field (SCF) mean-field calculation for 1D interacting fermion models.
 
@@ -6,34 +6,31 @@ The core of the method avoids direct diagonalization (which scales as $O(N^3)$) 
 
 This code is being developed for PhD research.
 
-Project Structure
+## Project Structure
 
-All main logic resides in the /src directory:
+All main logic resides in the `src` directory:
 
-src/models.jl: Defines the non-interacting Hamiltonian models (e.g., 1D chain, Aubry-Andre) as sparse matrices.
+*   `src/models.jl`: Defines the non-interacting Hamiltonian models (e.g., 1D chain, Aubry-Andre) as sparse matrices.
+*   `src/kpm.jl`: Implements the KPM expansion, kernels (Jackson, Lanczos), and the calculation of the density matrix and Fermi-Dirac coefficients.
+*   `src/meanfield.jl`: Implements the Hartree-Fock mean-field approximation for a first-neighbor repulsion ($U n_i n_{i+1}$).
+*   `src/run_scf.jl`: Contains the main `run_scf_loop` that manages the self-consistent convergence.
 
-src/kpm.jl: Implements the KPM expansion, kernels (Jackson, Lanczos), and the calculation of the density matrix and Fermi-Dirac coefficients.
-
-src/meanfield.jl: Implements the Hartree-Fock mean-field approximation for a first-neighbor repulsion ($U n_i n_{i+1}$).
-
-src/run_scf.jl: Contains the main run_scf_loop that manages the self-consistent convergence.
-
-Dependencies
+## Dependencies
 
 This project requires Julia (v1.6 or higher).
 
 The code relies on the following standard libraries:
 
-LinearAlgebra
+*   `LinearAlgebra`
+*   `SparseArrays`
 
-SparseArrays
+## How to Run (Driver Example)
 
-How to Run (Driver Example)
+To run a simulation, create a "driver" file (e.g., `main.jl`) in the root directory. This file is responsible for defining all parameters and calling the `run_scf_loop`.
 
-To run a simulation, create a "driver" file (e.g., main.jl) in the root directory. This file is responsible for defining all parameters and calling the run_scf_loop.
+Example `main.jl`:
 
-Example main.jl:
-
+```julia
 using SparseArrays
 using LinearAlgebra
 
@@ -124,14 +121,11 @@ println("Final E_Fermi: ", scf_history.E_Fermi_values[end])
 final_density_profile = diag(final_kpm_result.density_matrix) |> real
 println("Final density profile:")
 println(final_density_profile)
+```
 
+## Next Steps (To-Do)
 
-Next Steps (To-Do)
-
-[ ] Implement a more advanced mixing method (e.g., Pulay/DIIS) to accelerate convergence.
-
-[ ] Implement adaptive linear mixing.
-
-[ ] Add calculation of the total system energy at the end of the SCF.
-
-[ ] Add more models and interaction types (e.g., onsite Hubbard).
+*   Implement a more advanced mixing method (e.g., Pulay/DIIS) to accelerate convergence.
+*   Implement adaptive linear mixing.
+*   Add calculation of the total system energy at the end of the SCF.
+*   Add more models and interaction types (e.g., onsite Hubbard).
