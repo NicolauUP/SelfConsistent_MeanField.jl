@@ -3,6 +3,7 @@
 include("meanfield.jl")
 include("kpm.jl")
 include("models.jl")
+using Printf # Import for formatted printing
 
 
 function run_scf_loop(
@@ -28,7 +29,9 @@ function run_scf_loop(
     scf_loop_buffers = (
         errors = Float64[],
         E_Fermi_values = Float64[],
-        eigenvalues = [],  #Only if ObtainEigenvalues = true
+        eigenvalues = [],
+        kpm_time = [],
+        fermi_time = []  #Only if ObtainEigenvalues = true
     )
 
     # --- 2.Get H0
@@ -42,7 +45,10 @@ function run_scf_loop(
     
     # --- 4. Start SCF loop ---
     for scf_iter in 1:scf_Params.max_iterations
-        println("SCF Iteration: $scf_iter")
+        if scf_Params.verbose == 1 || scf_Params.verbose == 2
+           @printf("=== SCF Iteration %d ===\n", scf_iter)
+        end
+
         # --- 4.1. Build total Hamiltonian ---
         H_total = HamiltonianData.H + H_MF_int_current.H_MF_int
         HamiltonianData_to_KPM = (; HamiltonianData..., H = H_total)  #copies everything from HamiltonianData and replaces H with H_total
@@ -52,11 +58,17 @@ function run_scf_loop(
         #It should be, we choose the initial guess accordingly!
 
 
-        kpm_result = run_kpm_evolution(
+        kpm_time = @elapsed begin 
+            kpm_result = run_kpm_evolution(
             HamiltonianData_to_KPM,
             kpm_params
         )   
 
+        end
+
+        if scf_Params.verbose == 2
+            @printf("  -> KPM evolution time: %.9f s\n", kpm_time)
+        end
 
         H_MF_int_new = meanfield_updater(kpm_result, InteractionData, HamiltonianData)
 
@@ -65,13 +77,12 @@ function run_scf_loop(
 
         # --- 4.4. Check convergence ---
         error = maximum(abs.(diagonal_H_MF_new - diagonal_H_MF))
-        println("SCF Error: $error")
         push!(scf_loop_buffers.errors, error)
         
         diagonal_H_MF = diag(H_MF_int_new.H_MF_int) |> real #Update for next iteration!
 
 
-        if error < scf_Params.convergence_tol
+        if error < scf_Params.convergence_tol && (scf_Params.verbose == 1 || scf_Params.verbose == 2)
             println("SCF converged in $scf_iter iterations with error $error")
             break
         end
@@ -87,8 +98,18 @@ function run_scf_loop(
             push!(scf_loop_buffers.eigenvalues, eigvals(Matrix(H_total)) |> real)
         end
 
-        E_Fermi = find_new_FermiEnergy(InteractionData.density_target, kpm_result, HamiltonianData, kpm_params)
+        Fermi_time = @elapsed begin
+            E_Fermi = find_new_FermiEnergy(InteractionData.density_target, kpm_result, HamiltonianData, kpm_params)
+        end
+
+        if scf_Params.verbose == 2
+            @printf("  -> Fermi energy update time: %.9f s\n", Fermi_time)
+            println("SCF Error: $error")
+            println()
+        end
         push!(scf_loop_buffers.E_Fermi_values, E_Fermi)
+        push!(scf_loop_buffers.kpm_time, kpm_time)
+        push!(scf_loop_buffers.fermi_time, Fermi_time)
         # kpm_params = (; kpm_params..., scaling_a = E_Fermi) -> I have to think on this!
         HamiltonianData = (; HamiltonianData..., E_Fermi  = E_Fermi) #Update Fermi Energy basically!
     end
