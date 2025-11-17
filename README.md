@@ -10,9 +10,9 @@ This code is being developed for PhD research.
 
 All main logic resides in the `src` directory:
 
-*   `src/models.jl`: Defines the non-interacting Hamiltonian models (e.g., 1D chain, Aubry-Andre) as sparse matrices.
+*   `src/models.jl`: Defines the non-interacting Hamiltonian models (e.g., 1D chain, Aubry-Andre)  as sparse or dense matrices. The code it also built for CUArrays input.
 *   `src/kpm.jl`: Implements the KPM expansion, kernels (Jackson, Lanczos), and the calculation of the density matrix and Fermi-Dirac coefficients.
-*   `src/meanfield.jl`: Implements the Hartree-Fock mean-field approximation for a first-neighbor repulsion ($U n_i n_{i+1}$).
+*   `src/meanfield.jl`: Implements the Hartree-Fock mean-field approximation for some interaction terms.
 *   `src/run_scf.jl`: Contains the main `run_scf_loop` that manages the self-consistent convergence.
 
 ## Dependencies
