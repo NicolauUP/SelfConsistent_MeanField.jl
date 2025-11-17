@@ -27,7 +27,8 @@ function run_scf_loop(
     # --- 1.5. Initialize buffers to store SCF loop data
     scf_loop_buffers = (
         errors = Float64[],
-        E_Fermi_values = Float64[]
+        E_Fermi_values = Float64[],
+        eigenvalues = [],  #Only if ObtainEigenvalues = true
     )
 
     # --- 2.Get H0
@@ -82,7 +83,9 @@ function run_scf_loop(
         )
 
         # --- 4.6 Update Fermi Level ---
-
+        if scf_Params.ObtainEigenvalues
+            push!(scf_loop_buffers.eigenvalues, eigvals(Matrix(H_total)) |> real)
+        end
 
         E_Fermi = find_new_FermiEnergy(InteractionData.density_target, kpm_result, HamiltonianData, kpm_params)
         push!(scf_loop_buffers.E_Fermi_values, E_Fermi)
