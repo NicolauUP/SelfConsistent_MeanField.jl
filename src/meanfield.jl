@@ -61,3 +61,6 @@ function MeanField_1stNeighbor_Repulsion(kpm_result::NamedTuple, InteractionData
 
     return (H_MF_int = H_MF,)
 end
+
+
+
