@@ -10,9 +10,9 @@ This code is being developed for PhD research.
 
 All main logic resides in the `src` directory:
 
-*   `src/models.jl`: Defines the non-interacting Hamiltonian models (e.g., 1D chain, Aubry-Andre)  as sparse or dense matrices. The code it also built for CUArrays input.
+*   `src/models.jl`: Defines the non-interacting Hamiltonian models (e.g., 1D chain, Aubry-Andre) as sparse or dense matrices. The code is also built for `CuArray` inputs.
 *   `src/kpm.jl`: Implements the KPM expansion, kernels (Jackson, Lanczos), and the calculation of the density matrix and Fermi-Dirac coefficients.
-*   `src/meanfield.jl`: Implements the Hartree-Fock mean-field approximation for some interaction terms.
+*   `src/meanfield.jl`: Implements the Hartree-Fock mean-field approximation for various interaction terms (e.g., onsite Hubbard, first-neighbor repulsion).
 *   `src/run_scf.jl`: Contains the main `run_scf_loop` that manages the self-consistent convergence.
 
 ## Dependencies
@@ -57,17 +57,17 @@ HamiltonianData = (
 
 # --- 2. Define Interaction Parameters (Hint) ---
 InteractionData = (
-    U = 2.0,                  # Interaction strength
+    U = 2.0,               
     density_target = 0.5,     # Target density (e.g., 0.5 for half-filling)
-    type_of_guess = :CDW      # Initial guess type (:CDW)
+    type_of_guess = :CDW      # Initial guess type (:CDW, :AFM, etc.)
 )
 
 # --- 3. Define KPM Parameters ---
 # It is CRITICAL to estimate the total bandwidth (H0 + H_MF)
-E_min_est = -5.0
-E_max_est = 5.0
-scaling_a = (E_max_est - E_min_est) / 2.0  # (E_max - E_min) / 2
-scaling_b = (E_max_est + E_min_est) / 2.0  # (E_max + E_min) / 2
+E_min_est = -6.0
+E_max_est = 6.0
+scaling_a = (E_max_est - E_min_est) / 2.0
+scaling_b = (E_max_est + E_min_est) / 2.0
 
 kpm_params = (
     N_max = 1000,              # Number of moments (precision)
@@ -83,10 +83,11 @@ kpm_params = (
 )
 
 # --- 4. Define SCF Loop Parameters ---
-scf_Params = (
+scf_params = (
     max_iterations = 200,
     convergence_threshold = 1e-6,
-    mixing_parameter = 0.1 # Mixing parameter (low and stable)
+    mixer = :Pulay, # Mixing algorithm (:Pulay or :Linear)
+    mixing_parameter = 0.1 # For :Linear mixer
 )
 
 # --- 5. Define Functions and Execute ---
@@ -95,9 +96,9 @@ scf_Params = (
 hamiltonian_builder = one_dimensional_chain 
 # hamiltonian_builder = one_dimensional_AubryAndre
 
-# Define the mean-field functions
-meanfield_starter = StartMeanField_1stNeighbor_Repulsion
-meanfield_updater = MeanField_1stNeighbor_Repulsion
+# Define the mean-field functions for onsite Hubbard interaction
+meanfield_starter = StartMeanField_Hubbard
+meanfield_updater = MeanField_Hubbard
 
 println("--- Starting SCF loop ---")
 
@@ -105,7 +106,7 @@ println("--- Starting SCF loop ---")
     HamiltonianData,
     InteractionData,
     kpm_params,
-    scf_Params,
+    scf_params,
 
     hamiltonian_builder,
     meanfield_starter,
@@ -114,6 +115,7 @@ println("--- Starting SCF loop ---")
 
 # --- 6. Analyze Results ---
 println("--- Run Finished ---")
+println("Converged: ", scf_history.converged)
 println("Error history: ", scf_history.errors)
 println("Final E_Fermi: ", scf_history.E_Fermi_values[end])
 
@@ -121,11 +123,11 @@ println("Final E_Fermi: ", scf_history.E_Fermi_values[end])
 final_density_profile = diag(final_kpm_result.density_matrix) |> real
 println("Final density profile:")
 println(final_density_profile)
+
 ```
 
 ## Next Steps (To-Do)
 
-*   Implement a more advanced mixing method (e.g., Pulay/DIIS) to accelerate convergence.
-*   Implement adaptive linear mixing.
-*   Add calculation of the total system energy at the end of the SCF.
-*   Add more models and interaction types (e.g., onsite Hubbard).
+*   Expand the library of models and interaction types.
+*   Add GPU support for all routines using `CuArrays`.
+*   Add different approaches like exact diagonalization or purification techniques;
