@@ -10,8 +10,8 @@ function run_scf_loop(
     # --- Input Parameters ---
     HamiltonianData::NamedTuple,
     InteractionData::NamedTuple,
-    kpm_params::NamedTuple,
     scf_Params::NamedTuple,
+    solver_config::NamedTuple,
 
     # --- Function Arguments
     hamiltonian_builder::Function,
@@ -57,14 +57,14 @@ function run_scf_loop(
 
         # --- 4.1. Build total Hamiltonian ---
         H_total = HamiltonianData.H + H_MF_int_current.H_MF_int
-        HamiltonianData_to_KPM = (; HamiltonianData..., H = H_total)  #copies everything from HamiltonianData and replaces H with H_total
+        HamiltonianData_Current = (; HamiltonianData..., H = H_total)  #copies everything from HamiltonianData and replaces H with H_total
 
 
         #We assume that the first iteration has the correct Femi Energy!
         #It should be, we choose the initial guess accordingly!
 
-
-        kpm_time = @elapsed begin 
+        solver_time = @elapsed begin
+            if solver_config.solver == :KPM
             kpm_result = run_kpm_evolution(
             HamiltonianData_to_KPM,
             kpm_params
