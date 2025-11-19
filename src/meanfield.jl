@@ -22,10 +22,9 @@ function StartMeanField_1stNeighbor_Repulsion(InteractionData::NamedTuple, Hamil
     return (H_MF_int = H_MF,)
 end      
 
-function MeanField_1stNeighbor_Repulsion(kpm_result::NamedTuple, InteractionData::NamedTuple, HamiltonianData::NamedTuple)
+function MeanField_1stNeighbor_Repulsion(ρ::AbstractMatrix, InteractionData::NamedTuple, HamiltonianData::NamedTuple)
     U = InteractionData.U
     N_sites = HamiltonianData.N_sites
-    ρ = kpm_result.density_matrix
     
     # Get local charge density at each site
     n_i = diag(ρ) |> real  

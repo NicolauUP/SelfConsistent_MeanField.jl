@@ -3,6 +3,7 @@
 include("meanfield.jl")
 include("kpm.jl")
 include("models.jl")
+include("types.jl")
 using Printf # Import for formatted printing
 using LinearAlgebra
 
@@ -11,8 +12,8 @@ function run_scf_loop(
     HamiltonianData::NamedTuple,
     InteractionData::NamedTuple,
     scf_Params::NamedTuple,
-    solver_config::NamedTuple,
-
+    # --- Solver Configuration ---
+    density_solver::AbstractDensitySolver,
     # --- Function Arguments
     hamiltonian_builder::Function,
     meanfield_starter::Function,
@@ -28,14 +29,14 @@ function run_scf_loop(
 
     # --- 1.5. Initialize buffers to store SCF loop data
     scf_loop_buffers = (
-        errors = Float64[],
+        errors = Float64[], 
         E_Fermi_values = Float64[],
         eigenvalues = [],#Only if ObtainEigenvalues = true
         kpm_time = Float64[],
         fermi_time = Float64[]  
     )
 
-    # --- 2.Get H0
+    # --- 2.Get H0 
     if scf_Params.mixing == :Pulay
         buffer_errors = []
         buffer_H_MF = []
@@ -44,7 +45,7 @@ function run_scf_loop(
 
     
     HamiltonianData = hamiltonian_builder(HamiltonianData)
-    kpm_result = nothing
+    result = nothing
     # --- 3. Get initial mean-field Hamiltonian guess
     H_MF_int_current = meanfield_starter(InteractionData, HamiltonianData)
     diagonal_H_MF = diag(H_MF_int_current.H_MF_int) |> real
@@ -64,19 +65,14 @@ function run_scf_loop(
         #It should be, we choose the initial guess accordingly!
 
         solver_time = @elapsed begin
-            if solver_config.solver == :KPM
-            kpm_result = run_kpm_evolution(
-            HamiltonianData_to_KPM,
-            kpm_params
-        )   
-
+            (density_matrix_new, E_Fermi, raw_result) = obtain_density(density_solver, HamiltonianData_Current) #This will automatically call the correct function based on the type of density_solver (TOP) This could be easily generalized to MPOs!
         end
 
         if scf_Params.verbose == 2
-            @printf("  -> KPM evolution time: %.9f s\n", kpm_time)
+            @printf("  -> Solver time: %.9f s\n", solver_time)
         end
 
-        H_MF_int_new = meanfield_updater(kpm_result, InteractionData, HamiltonianData)
+        H_MF_int_new = meanfield_updater(density_matrix_new, InteractionData, HamiltonianData)
 
 
         diagonal_H_MF_new = diag(H_MF_int_new.H_MF_int) |> real       
