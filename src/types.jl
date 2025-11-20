@@ -1,17 +1,17 @@
 
 
 
-abstract type Density_Solver end
+abstract type AbstractDensitySolver end
 
 
-struct KPM_Solver <: Density_Solver
+struct KPM_Solver <: AbstractDensitySolver
     params::NamedTuple
 end
 
-struct ED_Solver <: Density_Solver
+struct ED_Solver <: AbstractDensitySolver
     params::NamedTuple
 end
 
-struct SP2_Solver <: Density_Solver
+struct SP2_Solver <: AbstractDensitySolver
     params::NamedTuple
 end

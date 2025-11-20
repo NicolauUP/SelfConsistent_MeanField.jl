@@ -4,6 +4,7 @@ include("meanfield.jl")
 include("kpm.jl")
 include("models.jl")
 include("types.jl")
+include("solver_wrappers.jl")
 using Printf # Import for formatted printing
 using LinearAlgebra
 
@@ -26,14 +27,13 @@ function run_scf_loop(
     println("Hamiltonian constructed from: $(hamiltonian_builder)")
     println("Mean-field starter: $(meanfield_starter)")
     println("Mean-field updater: $(meanfield_updater)")
-
+    println("Density solver: $(density_solver)")
     # --- 1.5. Initialize buffers to store SCF loop data
     scf_loop_buffers = (
         errors = Float64[], 
         E_Fermi_values = Float64[],
         eigenvalues = [],#Only if ObtainEigenvalues = true
-        kpm_time = Float64[],
-        fermi_time = Float64[]  
+        solver_time = Float64[]
     )
 
     # --- 2.Get H0 
@@ -46,6 +46,7 @@ function run_scf_loop(
     
     HamiltonianData = hamiltonian_builder(HamiltonianData)
     result = nothing
+    density_matrix = nothing
     # --- 3. Get initial mean-field Hamiltonian guess
     H_MF_int_current = meanfield_starter(InteractionData, HamiltonianData)
     diagonal_H_MF = diag(H_MF_int_current.H_MF_int) |> real
@@ -65,14 +66,14 @@ function run_scf_loop(
         #It should be, we choose the initial guess accordingly!
 
         solver_time = @elapsed begin
-            (density_matrix_new, E_Fermi, raw_result) = obtain_density(density_solver, HamiltonianData_Current) #This will automatically call the correct function based on the type of density_solver (TOP) This could be easily generalized to MPOs!
+            (density_matrix, E_Fermi, result) = obtain_density(density_solver, HamiltonianData_Current, InteractionData.density_target) #This will automatically call the correct function based on the type of density_solver (TOP) This could be easily generalized to MPOs!
         end
 
         if scf_Params.verbose == 2
             @printf("  -> Solver time: %.9f s\n", solver_time)
         end
 
-        H_MF_int_new = meanfield_updater(density_matrix_new, InteractionData, HamiltonianData)
+        H_MF_int_new = meanfield_updater(density_matrix, InteractionData, HamiltonianData)
 
 
         diagonal_H_MF_new = diag(H_MF_int_new.H_MF_int) |> real       
@@ -146,18 +147,12 @@ function run_scf_loop(
             push!(scf_loop_buffers.eigenvalues, eigvals(Matrix(H_total)) |> real)
         end
 
-        Fermi_time = @elapsed begin
-            E_Fermi = find_new_FermiEnergy(InteractionData.density_target, kpm_result, HamiltonianData, kpm_params;max_iter = 4000,search_range = 4.0)
-        end
-
         if scf_Params.verbose == 2
-            @printf("  -> Fermi energy update time: %.9f s\n", Fermi_time)
             println("SCF Error: $error")
             println()
         end
         push!(scf_loop_buffers.E_Fermi_values, E_Fermi)
-        push!(scf_loop_buffers.kpm_time, kpm_time)
-        push!(scf_loop_buffers.fermi_time, Fermi_time)
+        push!(scf_loop_buffers.solver_time, solver_time)
         # kpm_params = (; kpm_params..., scaling_a = E_Fermi) -> I have to think on this!
         HamiltonianData = (; HamiltonianData..., E_Fermi  = E_Fermi) #Update Fermi Energy basically!
     end
@@ -165,5 +160,5 @@ function run_scf_loop(
 
 
 
-    return (kpm_result = kpm_result, scf_loop_buffers = scf_loop_buffers)
+    return (density_matrix = density_matrix, scf_loop = scf_loop_buffers,result = result,)
 end
