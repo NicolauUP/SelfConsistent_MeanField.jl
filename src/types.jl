@@ -12,6 +12,6 @@ struct ED_Solver <: AbstractDensitySolver
     params::NamedTuple
 end
 
-struct SP2_Solver <: AbstractDensitySolver
+struct Purification_Solver <: AbstractDensitySolver
     params::NamedTuple
 end
