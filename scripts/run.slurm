@@ -34,8 +34,8 @@ echo "Starting GNU Parallel run..."
 # > logs/job_{#}.log: (Optional) Saves output to separate files (job_1.log, job_2.log)
 # remove the "> ..." part if you want everything in the main slurm file.
 
-mkdir -p logs
+mkdir -p ../logs
 parallel --jobs 17 \
-    "julia ../. ../src/main.jl {} > logs/run_{#}.log 2>&1" :::: args.txt
+    "julia --project=../. ../src/main.jl {} > ../logs/run_{#}.log 2>&1" :::: args.txt
 
 echo "All jobs finished."
