@@ -1,5 +1,6 @@
 include("run_scf.jl")
 using ArgParse
+using SparseArrays
 
 function parse_command_line()
     s = ArgParseSettings()
@@ -51,14 +52,14 @@ InteractionData = (U = args["U"],
 algo = args["algo"]
 if algo == "Purif"
     purification_params = (max_iters = 100, verbose=false)
-    @global solver = Purification_Solver(purification_params)
+    global solver = Purification_Solver(purification_params)
 
 elseif algo == "ED"
-    @global solver = ED_Solver(())
+    global solver = ED_Solver(())
 
 elseif algo == "KPM"
     N_max = args["N_max"]   
-    ompute_density_matrix = true
+    compute_density_matrix = true
     compute_ldos = false
     Energies = Float64[]
     compute_spectral_function = false 
@@ -75,7 +76,7 @@ elseif algo == "KPM"
          kernel = :jackson,
          scaling_a = scaling_a,
          scaling_b = scaling_b)
-    @global solver = KPM_Solver(kpm_params)
+    global solver = KPM_Solver(kpm_params)
 
 
 else
@@ -102,5 +103,32 @@ time_scf = @elapsed (density_matrix, scf_history, other_data) = run_scf_loop(
 ;
 Pulay_max_history = 4)
 
-println("Elapsed time: ", time, " seconds")
+println("Elapsed time: ", time_scf, " seconds")
+
+
+using HDF5
+
+# --- 7. Save results ---
+filename = "../data/results_$(algo)_N$(args["N_sites"])_U$(args["U"])"
+if algo == "KPM"
+    filename *= "_Nmax$(args["N_max"])"
+end
+filename *= ".h5"
+
+println("Saving density matrix to $(filename)")
+
+h5open(filename, "w") do file
+    write(file, "density_matrix", density_matrix)
+    # Optionally, save other parameters or results
+    g = create_group(file, "parameters")
+    for (key, value) in args
+        if !isnothing(value)
+            write(g, key, value)
+        end
+    end
+    write(file, "time", time_scf)
+
+end
+
+println("Done.")
 

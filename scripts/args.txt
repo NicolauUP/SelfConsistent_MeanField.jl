@@ -9,11 +9,11 @@
 --algo KPM --N_sites 1024 --U 0.1 --N_max 2048
 --algo KPM --N_sites 1024 --U 0.1 --N_max 4096
 --algo KPM --N_sites 1024 --U 0.1 --N_max 8192
---algo KPM --N_sites 1024 --U 0.1 --N_max 32
---algo KPM --N_sites 1024 --U 0.1 --N_max 64
---algo KPM --N_sites 1024 --U 0.1 --N_max 128
---algo KPM --N_sites 1024 --U 0.1 --N_max 256
---algo KPM --N_sites 1024 --U 0.1 --N_max 512
---algo KPM --N_sites 1024 --U 0.1 --N_max 1024
+--algo KPM --N_sites 1024 --U 2.0 --N_max 32
+--algo KPM --N_sites 1024 --U 2.0 --N_max 64
+--algo KPM --N_sites 1024 --U 2.0 --N_max 128
+--algo KPM --N_sites 1024 --U 2.0 --N_max 256
+--algo KPM --N_sites 1024 --U 2.0 --N_max 512
+--algo KPM --N_sites 1024 --U 2.0 --N_max 1024
 
  
