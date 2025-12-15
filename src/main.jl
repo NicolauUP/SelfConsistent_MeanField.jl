@@ -1,4 +1,4 @@
-include("../src/run_scf.jl")
+include("run_scf.jl")
 using ArgParse
 
 function parse_command_line()
