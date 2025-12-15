@@ -1,2 +1,2 @@
-../notebooks/*.ipynb
+notebooks/*.ipynb
 .DS_Store
