@@ -36,6 +36,6 @@ echo "Starting GNU Parallel run..."
 
 mkdir -p ../logs
 parallel --jobs 17 \
-    "julia --project=../. ../src/main.jl {} > ../logs/run_{#}.log 2>&1" :::: args.txt
-
+    'julia --project=../. ../src/main.jl $(echo {}) > ../logs/run_{#}.log 2>&1' \
+    :::: args.txt
 echo "All jobs finished."
